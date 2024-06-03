@@ -160,12 +160,12 @@ class KeyVaultUploader(QWidget):
             credential = DefaultAzureCredential()
             client = SecretClient(vault_url=key_vault_url, credential=credential)
 
-            print(f"Connected to Key Vault {key_vault_name}")
+            print(f"Connected to Key Vault {self.key_vault_name}")
 
             for key, value in self.env_vars.items():
-                print(f"Setting secret '{key}' in Key Vault {key_vault_name}...")
+                print(f"Setting secret '{key}' in Key Vault {self.key_vault_name}...")
                 client.set_secret(key, value)
-                print(f"Success: Set secret '{key}' in Key Vault {key_vault_name}")
+                print(f"Success: Set secret '{key}' in Key Vault {self.key_vault_name}")
             
             default_yaml_path = os.path.join(os.path.dirname(self.env_file_path), "env.yml")
             yaml_file_path, _ = QFileDialog.getSaveFileName(self, "Save YAML file", default_yaml_path, "YAML Files (*.yml)")
