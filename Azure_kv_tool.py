@@ -234,14 +234,16 @@ class KeyVaultUploader(QMainWindow):
         try:
             credential = DefaultAzureCredential()
             client = SecretClient(vault_url=key_vault_url, credential=credential)
+            self.status_signal.emit(f"Connected to Key Vault: {key_vault_name}")
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to create Key Vault client: {e}")
+            QMessageBox.critical(self, "Error", f"Failed to connect to Key Vault: {e}")
             return
 
         self.status_signal.emit(f"Uploading environment variables to {key_vault_name}...")
         for key, value in self.env_vars.items():
             try:
-                client.set_secret(key, value)
+                key_vault_key = key.replace("_", "-")
+                client.set_secret(key_vault_key, value)
                 self.status_signal.emit(f"Successfully set {key}")
             except Exception as e:
                 self.status_signal.emit(f"Failed to set {key}: {e}")
@@ -266,11 +268,11 @@ class KeyVaultUploader(QMainWindow):
         if not file_name.endswith('.yml'):
             file_name += '.yml'
         
-        self.save_to_yaml(self.key_vault_name, self.env_vars, file_name)
+        self.save_to_yaml(key_vault_name, self.env_vars, file_name)
         QMessageBox.information(self, "Success", "YAML file saved successfully.")
 
     # Function to save environment variables to a YAML file
-    def save_to_yaml(key_vault_name, env_vars, yaml_file_path):
+    def save_to_yaml(self, key_vault_name, env_vars, yaml_file_path):
         # Construct the YAML content
         yaml_content = (
             "parameters:\n"
@@ -303,7 +305,7 @@ class KeyVaultUploader(QMainWindow):
 
         # Add the closing YAML content
         yaml_content += (
-            "\n"
+            "\\\n"
         )
 
         # Write the YAML content to the file
