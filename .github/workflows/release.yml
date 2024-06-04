@@ -31,7 +31,7 @@ jobs:
         poetry install --with build
     
     - name: Update version
-      run: sed -i "s/__version__ = .*/__version__ = \'v0.0.${{ github.run_number }}\'/"
+      run: sed -i "s/__version__ = .*/__version__ = \'v0.0.${{ github.run_number }}\'/" Azure_kv_tool.py
 
     - name: Build with PyInstaller
       run: |
