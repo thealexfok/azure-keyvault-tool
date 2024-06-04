@@ -5,22 +5,17 @@ __license__ = "GPL"
 __version__ = "1.0"
 __email__ = "thisisalexfok@gmail.com"
 
-
 import os
 import sys
 import yaml
 import json
 import threading
 import subprocess
-
-# Azure
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QWidget, QLineEdit, QMessageBox)
+from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
-
-# GUI
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QWidget, QLineEdit, QMessageBox)
-from PyQt6.QtGui import (QDragEnterEvent, QDropEvent,QIcon)
-from PyQt6.QtCore import (Qt, pyqtSignal, pyqtSlot)
 
 basedir = os.path.dirname(__file__)
 
@@ -34,10 +29,13 @@ except ImportError:
 class KeyVaultUploader(QMainWindow):
     login_status_signal = pyqtSignal(str)
     subscriptions_signal = pyqtSignal(str)
+    status_signal = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
         self.initUI()
+        self.env_vars = {}
+        threading.Thread(target=self.check_login_status).start()
 
     @pyqtSlot(str)
     def update_login_status(self, status):
@@ -46,13 +44,15 @@ class KeyVaultUploader(QMainWindow):
     @pyqtSlot(str)
     def update_subscriptions(self, subscriptions):
         self.subscriptions_list.setText(subscriptions)
-        
+
+    @pyqtSlot(str)
+    def update_status(self, message):
+        self.status_box.append(message)
 
     def check_login_status(self):
         self.subscriptions_signal.emit("Not logged in")
         result = subprocess.run("az account show --output json > az_account.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        result = result.returncode
-        if result == 0:
+        if result.returncode == 0:
             with open("az_account.json") as f:
                 account_info = json.load(f)
                 email = account_info["user"]["name"]
@@ -64,8 +64,7 @@ class KeyVaultUploader(QMainWindow):
 
     def login_to_azure(self):
         result = subprocess.run("az login --output json > az_login.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        result = result.returncode
-        if result == 0:
+        if result.returncode == 0:
             with open("az_login.json") as f:
                 login_info = json.load(f)
                 email = login_info[0]["user"]["name"]
@@ -78,8 +77,7 @@ class KeyVaultUploader(QMainWindow):
     def get_subscriptions(self):
         self.subscriptions_signal.emit("Fetching Subscriptions...")
         result = subprocess.run("az account list --output json > az_subscriptions.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        result = result.returncode
-        if result == 0:
+        if result.returncode == 0:
             with open("az_subscriptions.json") as f:
                 subscriptions_info = json.load(f)
                 subscriptions_text = ""
@@ -111,7 +109,6 @@ class KeyVaultUploader(QMainWindow):
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
-
         self.layout = QVBoxLayout(self.central_widget)
 
         self.login_status = QLabel("Checking login status...", self)
@@ -156,37 +153,38 @@ class KeyVaultUploader(QMainWindow):
         self.run_button.clicked.connect(self.set_variables)
         self.layout.addWidget(self.run_button)
 
-        
         self.save_button = QPushButton("Save YAML", self)
         self.save_button.clicked.connect(self.save_yaml)
         self.layout.addWidget(self.save_button)
 
-        self.env_vars = {}
+        self.status_label = QLabel("Status:", self)
+        self.layout.addWidget(self.status_label)
+        self.status_box = QTextEdit(self)
+        self.status_box.setReadOnly(True)
+        self.layout.addWidget(self.status_box)
 
         self.login_status_signal.connect(self.update_login_status)
         self.subscriptions_signal.connect(self.update_subscriptions)
-
-        # Check login status on startup in a separate thread
-        threading.Thread(target=self.check_login_status).start()
+        self.status_signal.connect(self.update_status)
 
     def open_file_dialog(self):
         file_name, _ = QFileDialog.getOpenFileName(self, "Open .env file", ".env", "Env Files (*.env.*);;Text Files (*.txt)")
         if file_name:
             self.load_env_file(file_name)
-    
-    def dragEnterEvent(self, event: QDragEnterEvent):
+
+    def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
             self.setStyleSheet("background-color: lightgreen;")
         else:
             event.ignore()
-    
+
     def dragLeaveEvent(self, event):
         self.setStyleSheet("")
 
-    def dropEvent(self, event: QDropEvent):
+    def dropEvent(self, event):
         self.setStyleSheet("")
-        if event.mimeData().urls() != []:
+        if event.mimeData().urls():
             for url in event.mimeData().urls():
                 file_name = url.toLocalFile()
                 self.load_env_file(file_name)
@@ -195,33 +193,14 @@ class KeyVaultUploader(QMainWindow):
             file_name = event.mimeData().text()
             self.load_env_file(file_name)
             self.env_file_path = file_name
-    
+
     def preview_env_vars(self):
         preview_text = "\n".join([f"{key}: {value}" for key, value in self.env_vars.items()])
         self.env_preview.setText(preview_text)
-    
+
     def clear_preview(self):
         self.env_vars.clear()
         self.env_preview.clear()
-    
-    def load_env_file(self, file_name):
-        with open(file_name, 'r') as file:
-            for line in file:
-                if '=' in line:
-                    key, value = line.strip().split('=', 1)
-                    self.env_vars[key.strip()] = value.strip().replace(" ", "")
-            self.preview_env_vars()
-
-    def clear_env_file(self):
-        self.env_file_path = ""
-        self.env_vars = {}
-        self.env_preview.clear()
-
-    def process_env_file(self):
-        self.env_vars = read_env_file(self.env_file_path)
-        self.env_preview.clear()
-        for key, value in self.env_vars.items():
-            self.env_preview.append(f"{key}: {value}")
 
     def load_env_file(self, file_name):
         with open(file_name, 'r') as file:
@@ -230,42 +209,34 @@ class KeyVaultUploader(QMainWindow):
                     key, value = line.strip().split('=', 1)
                     self.env_vars[key.strip()] = value.strip().replace(" ", "")
             self.preview_env_vars()
-
-    def preview_env_vars(self):
-        preview_text = "\n".join([f"{key}: {value}" for key, value in self.env_vars.items()])
-        self.env_preview.setText(preview_text)
-    
-    def clear_preview(self):
-        self.env_vars.clear()
-        self.env_preview.clear()
 
     def set_variables(self):
-        self.key_vault_name = self.key_vault_input.text().strip()
-        if not self.key_vault_name:
+        key_vault_name = self.key_vault_input.text().strip()
+        if not key_vault_name:
             QMessageBox.warning(self, "Input Error", "Please enter the Key Vault name.")
             return
         if not self.env_vars:
             QMessageBox.warning(self, "Input Error", "No environment variables to upload.")
             return
 
-        key_vault_url = f"https://{self.key_vault_name}.vault.azure.net"
+        key_vault_url = f"https://{key_vault_name}.vault.azure.net"
 
         try:
             credential = DefaultAzureCredential()
             client = SecretClient(vault_url=key_vault_url, credential=credential)
 
-            print(f"Connected to Key Vault {self.key_vault_name}")
+            self.status_signal.emit(f"Connected to Key Vault {key_vault_name}")
 
             for key, value in self.env_vars.items():
                 key_vault_key = key.replace("_", "-")
-                print(f"Setting secret '{key_vault_key}' in Key Vault {self.key_vault_name}...")
+                self.status_signal.emit(f"Setting secret '{key_vault_key}' in Key Vault {key_vault_name}...")
                 client.set_secret(key_vault_key, value)
-                print(f"Success: Set secret '{key_vault_key}' in Key Vault {self.key_vault_name}")
-            
-            
-            QMessageBox.information(self, "Success", f"Environment variables have been set in Key Vault and {yaml_file_path} has been generated.")
-        
+                self.status_signal.emit(f"Success: Set secret '{key_vault_key}' in Key Vault {key_vault_name}")
+
+            QMessageBox.information(self, "Success", "Environment variables have been set in Key Vault.")
+
         except Exception as e:
+            self.status_signal.emit(f"Failed to set secrets in Key Vault: {str(e)}")
             QMessageBox.critical(self, "Error", f"Failed to set secrets in Key Vault: {str(e)}")
 
     def save_yaml(self):
@@ -273,23 +244,20 @@ class KeyVaultUploader(QMainWindow):
         if not key_vault_name:
             QMessageBox.warning(self, "Input Error", "Please enter the Key Vault name.")
             return
-        
-        
+
         default_yaml_path = os.path.join(os.path.dirname(self.env_file_path), "env.yml")
         file_name, _ = QFileDialog.getSaveFileName(self, "Save YAML File", default_yaml_path, "YAML Files (*.yml);;All Files (*)")
-        
+
         if not file_name:
             return
-        
+
         if not file_name.endswith('.yml'):
             file_name += '.yml'
-        
-        self.save_to_yaml(self.key_vault_name, self.env_vars, file_name)
+
+        self.save_to_yaml(key_vault_name, self.env_vars, file_name)
         QMessageBox.information(self, "Success", "YAML file saved successfully.")
 
-    # Function to save environment variables to a YAML file
-    def save_to_yaml(key_vault_name, env_vars, yaml_file_path):
-        # Construct the YAML content
+    def save_to_yaml(self, key_vault_name, env_vars, yaml_file_path):
         yaml_content = (
             "parameters:\n"
             "  - name: environment\n"
@@ -312,23 +280,14 @@ class KeyVaultUploader(QMainWindow):
             "          az webapp config appsettings set --resource-group $(resource_group_name) --name $(web_app_name) --settings \\\n"
         )
 
-        # Add each environment variable setting
         for key, value in env_vars.items():
             formatted_key = key.replace('-', '_')
-            yaml_content += (
-                f"          {formatted_key}=\"@Microsoft.KeyVault(SecretUri=https://{key_vault_name}${{{{ parameters.environment }}}}.vault.azure.net/secrets/{key}/)\"\n"
-            )
+            yaml_content += f"          {formatted_key}=\"@Microsoft.KeyVault(SecretUri=https://{key_vault_name}${{{{ parameters.environment }}}}.vault.azure.net/secrets/{key}/)\"\n"
 
-        # Add the closing YAML content
-        yaml_content += (
-            "\n"
-        )
+        yaml_content += "\\\n"
 
-        # Write the YAML content to the file
         with open(yaml_file_path, 'w') as yaml_file:
             yaml_file.write(yaml_content)
-
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
