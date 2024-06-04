@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Key Vault Uploader</title>
+  <!-- Materialize CSS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet">
+  <style>
+    .container {
+      margin-top: 50px;
+    }
+    .file-field .btn, .file-path-wrapper {
+      display: inline-block;
+      width: auto;
+    }
+    .file-path-wrapper {
+      margin-left: 10px;
+      width: calc(100% - 100px);
+    }
+    body.dark-mode {
+      background-color: #121212;
+      color: #ffffff;
+    }
+    .dark-mode .container {
+      background-color: #1e1e1e;
+    }
+    .dark-mode input, .dark-mode textarea {
+      background-color: #2e2e2e;
+      color: #ffffff;
+    }
+    .dark-mode label {
+      color: #b0b0b0;
+    }
+    .dark-mode .file-field .btn, .dark-mode .file-path-wrapper {
+      background-color: #2e2e2e;
+    }
+    .dark-mode .file-path-wrapper input {
+      background-color: #2e2e2e;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="switch">
+      <label>
+        Light
+        <input type="checkbox" id="darkModeToggle">
+        <span class="lever"></span>
+        Dark
+      </label>
+    </div>
+    <div class="row">
+      <div class="input-field col s12">
+        <input id="keyVaultNameInput" type="text" class="validate">
+        <label for="keyVaultNameInput">Enter Key Vault Name</label>
+      </div>
+    </div>
+    <div class="row">
+      <div class="file-field input-field col s12">
+        <div class="btn">
+          <span>Upload</span>
+          <input id="uploadInput" type="file" accept=".env">
+        </div>
+        <div class="file-path-wrapper">
+          <input class="file-path validate" type="text" placeholder="Drag and drop .env file here or click to upload">
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="input-field col s12">
+        <textarea id="envPreview" class="materialize-textarea" readonly></textarea>
+        <label for="envPreview">Preview</label>
+      </div>
+    </div>
+    <div class="row">
+      <button id="clearButton" class="btn red">Clear</button>
+      <button id="runButton" class="btn green">Run</button>
+    </div>
+  </div>
+  <!-- Materialize JavaScript -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
