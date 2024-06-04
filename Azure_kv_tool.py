@@ -1,21 +1,22 @@
-__author__ = "Alex Fok"
-__copyright__ = "Copyright (©) 2024 Alex Fok"
-__credits__ = ["Alex Fok"]
-__license__ = "GPL"
-__version__ = "1.0"
-__email__ = "thisisalexfok@gmail.com"
-
 import os
 import sys
 import yaml
 import json
 import threading
 import subprocess
-from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QWidget, QLineEdit, QMessageBox)
+import requests
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QWidget, QLineEdit, QMessageBox)
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
+
+__author__ = "Alex Fok"
+__copyright__ = "Copyright (©) 2024 Alex Fok"
+__credits__ = ["Alex Fok"]
+__license__ = "GPL"
+__version__ = "1.0"
+__email__ = "thisisalexfok@gmail.com"
 
 basedir = os.path.dirname(__file__)
 
@@ -115,9 +116,15 @@ class KeyVaultUploader(QMainWindow):
         self.login_status.setStyleSheet("color: blue;")
         self.layout.addWidget(self.login_status)
 
+        login_update_layout = QHBoxLayout()
         self.login_button = QPushButton("Login to Azure CLI", self)
         self.login_button.clicked.connect(self.login_to_azure)
-        self.layout.addWidget(self.login_button)
+        login_update_layout.addWidget(self.login_button)
+
+        self.check_updates_button = QPushButton("Check for Updates", self)
+        self.check_updates_button.clicked.connect(self.check_for_updates)
+        login_update_layout.addWidget(self.check_updates_button)
+        self.layout.addLayout(login_update_layout)
 
         self.subscriptions_label = QLabel("Your Subscriptions and Key Vaults:", self)
         self.layout.addWidget(self.subscriptions_label)
@@ -133,10 +140,16 @@ class KeyVaultUploader(QMainWindow):
         self.layout.addWidget(self.key_vault_input)
 
         self.setAcceptDrops(True)
+        upload_clear_layout = QHBoxLayout()
         self.drag_button = QPushButton("Drag and drop .env file here or click here to upload", self)
         self.drag_button.setAcceptDrops(True)
         self.drag_button.clicked.connect(self.open_file_dialog)
-        self.layout.addWidget(self.drag_button)
+        upload_clear_layout.addWidget(self.drag_button)
+
+        self.clear_button = QPushButton("Clear variables", self)
+        self.clear_button.clicked.connect(self.clear_preview)
+        upload_clear_layout.addWidget(self.clear_button)
+        self.layout.addLayout(upload_clear_layout)
 
         self.env_preview_label = QLabel("Environment Variables Preview:", self)
         self.layout.addWidget(self.env_preview_label)
@@ -144,10 +157,6 @@ class KeyVaultUploader(QMainWindow):
         self.env_preview = QTextEdit(self)
         self.env_preview.setReadOnly(True)
         self.layout.addWidget(self.env_preview)
-
-        self.clear_button = QPushButton("Clear variables", self)
-        self.clear_button.clicked.connect(self.clear_preview)
-        self.layout.addWidget(self.clear_button)
 
         self.run_button = QPushButton("Run", self)
         self.run_button.clicked.connect(self.set_variables)
@@ -157,7 +166,7 @@ class KeyVaultUploader(QMainWindow):
         self.save_button.clicked.connect(self.save_yaml)
         self.layout.addWidget(self.save_button)
 
-        self.status_label = QLabel("Status:", self)
+        self.status_label = QLabel("Console Status:", self)
         self.layout.addWidget(self.status_label)
         self.status_box = QTextEdit(self)
         self.status_box.setReadOnly(True)
@@ -224,40 +233,44 @@ class KeyVaultUploader(QMainWindow):
         try:
             credential = DefaultAzureCredential()
             client = SecretClient(vault_url=key_vault_url, credential=credential)
-
-            self.status_signal.emit(f"Connected to Key Vault {key_vault_name}")
-
-            for key, value in self.env_vars.items():
-                key_vault_key = key.replace("_", "-")
-                self.status_signal.emit(f"Setting secret '{key_vault_key}' in Key Vault {key_vault_name}...")
-                client.set_secret(key_vault_key, value)
-                self.status_signal.emit(f"Success: Set secret '{key_vault_key}' in Key Vault {key_vault_name}")
-
-            QMessageBox.information(self, "Success", "Environment variables have been set in Key Vault.")
-
         except Exception as e:
-            self.status_signal.emit(f"Failed to set secrets in Key Vault: {str(e)}")
-            QMessageBox.critical(self, "Error", f"Failed to set secrets in Key Vault: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Failed to create Key Vault client: {e}")
+            return
+
+        self.status_signal.emit(f"Uploading environment variables to {key_vault_name}...")
+        for key, value in self.env_vars.items():
+            try:
+                client.set_secret(key, value)
+                self.status_signal.emit(f"Successfully set {key}")
+            except Exception as e:
+                self.status_signal.emit(f"Failed to set {key}: {e}")
 
     def save_yaml(self):
         key_vault_name = self.key_vault_input.text()
         if not key_vault_name:
             QMessageBox.warning(self, "Input Error", "Please enter the Key Vault name.")
             return
-
+        
+        if not self.env_vars:
+            QMessageBox.warning(self, "Input Error", "No environment variables to generate YAML.")
+            return
+        
+        
         default_yaml_path = os.path.join(os.path.dirname(self.env_file_path), "env.yml")
         file_name, _ = QFileDialog.getSaveFileName(self, "Save YAML File", default_yaml_path, "YAML Files (*.yml);;All Files (*)")
-
+        
         if not file_name:
             return
-
+        
         if not file_name.endswith('.yml'):
             file_name += '.yml'
-
-        self.save_to_yaml(key_vault_name, self.env_vars, file_name)
+        
+        self.save_to_yaml(self.key_vault_name, self.env_vars, file_name)
         QMessageBox.information(self, "Success", "YAML file saved successfully.")
 
-    def save_to_yaml(self, key_vault_name, env_vars, yaml_file_path):
+    # Function to save environment variables to a YAML file
+    def save_to_yaml(key_vault_name, env_vars, yaml_file_path):
+        # Construct the YAML content
         yaml_content = (
             "parameters:\n"
             "  - name: environment\n"
@@ -280,18 +293,46 @@ class KeyVaultUploader(QMainWindow):
             "          az webapp config appsettings set --resource-group $(resource_group_name) --name $(web_app_name) --settings \\\n"
         )
 
+        # Add each environment variable setting
         for key, value in env_vars.items():
             formatted_key = key.replace('-', '_')
-            yaml_content += f"          {formatted_key}=\"@Microsoft.KeyVault(SecretUri=https://{key_vault_name}${{{{ parameters.environment }}}}.vault.azure.net/secrets/{key}/)\"\n"
+            yaml_content += (
+                f"          {formatted_key}=\"@Microsoft.KeyVault(SecretUri=https://{key_vault_name}${{{{ parameters.environment }}}}.vault.azure.net/secrets/{key}/)\"\n"
+            )
 
-        yaml_content += "\\\n"
+        # Add the closing YAML content
+        yaml_content += (
+            "\n"
+        )
 
+        # Write the YAML content to the file
         with open(yaml_file_path, 'w') as yaml_file:
             yaml_file.write(yaml_content)
 
+    def check_for_updates(self):
+        current_version = __version__
+        try:
+            response = requests.get("https://api.github.com/repos/thealexfok/azure-keyvault-tool/releases/latest")
+            latest_release = response.json()
+            latest_version = latest_release["tag_name"]
+            download_url = latest_release["assets"][0]["browser_download_url"]
+
+            if latest_version != current_version:
+                reply = QMessageBox.question(self, "Update Available",
+                                            f"A new version {latest_version} is available. Current version: {current_version}is outdated. Do you want to download it?",
+                                            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                            QMessageBox.StandardButton.Yes)
+                if reply == QMessageBox.StandardButton.Yes:
+                    webbrowser.open(download_url)
+                else:
+                    QMessageBox.information(self, "Update", "You chose to use the current version.")
+            else:
+                QMessageBox.information(self, "No Update Available", "You are using the latest version.")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to check for updates: {e}")
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    app.setWindowIcon(QIcon(os.path.join(basedir, 'icon.ico')))
     uploader = KeyVaultUploader()
     uploader.show()
     sys.exit(app.exec())
