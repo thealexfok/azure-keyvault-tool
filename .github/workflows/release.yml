@@ -37,7 +37,7 @@ jobs:
     - name: Archive build
       run: |
         mkdir release
-        mv "dist/Azure_Keyvault_Tool.exe" "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.exe"
+        mv "dist/Azure_kv_tool.exe" "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.exe"
       shell: bash
 
     - name: Upload to release
