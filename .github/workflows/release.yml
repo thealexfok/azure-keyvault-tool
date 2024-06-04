@@ -29,6 +29,9 @@ jobs:
         python -m pip install --upgrade pip
         pip install poetry
         poetry install --with build
+    
+    - name: Update version
+      run: sed -i "s/__version__ = .*/__version__ = \"v0.0.${{ github.run_number }}\"/"
 
     - name: Build with PyInstaller
       run: |

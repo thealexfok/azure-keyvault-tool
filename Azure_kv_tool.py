@@ -336,6 +336,7 @@ class KeyVaultUploader(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(os.path.join(basedir, 'icon.ico')))
     uploader = KeyVaultUploader()
     uploader.show()
     sys.exit(app.exec())
