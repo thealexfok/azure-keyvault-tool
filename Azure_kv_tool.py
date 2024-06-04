@@ -5,6 +5,7 @@ import json
 import threading
 import subprocess
 import requests
+import webbrowser
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QWidget, QLineEdit, QMessageBox)
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
@@ -319,15 +320,15 @@ class KeyVaultUploader(QMainWindow):
 
             if latest_version != current_version:
                 reply = QMessageBox.question(self, "Update Available",
-                                            f"A new version {latest_version} is available. Current version: {current_version}is outdated. Do you want to download it?",
+                                            f"A new version {latest_version} is available\nCurrent version: {current_version} is outdated\nDo you want to download it?",
                                             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                                             QMessageBox.StandardButton.Yes)
                 if reply == QMessageBox.StandardButton.Yes:
                     webbrowser.open(download_url)
                 else:
-                    QMessageBox.information(self, "Update", "You chose to use the current version.")
+                    QMessageBox.information(self, "Update", f"You are staying on the current version{current_version}.\nThere might be bugs that may not be fixed.")
             else:
-                QMessageBox.information(self, "No Update Available", "You are using the latest version.")
+                QMessageBox.information(self, "No Update Available", f"You are using the latest version: {current_version}.")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to check for updates: {e}")
 
