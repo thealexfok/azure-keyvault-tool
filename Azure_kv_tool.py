@@ -11,15 +11,25 @@ import sys
 import yaml
 import json
 import threading
+import subprocess
 
 # Azure
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 
 # GUI
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QWidget, QLineEdit, QMessageBox)
-from PyQt5.QtGui import (QDragEnterEvent, QDropEvent)
-from PyQt5.QtCore import (Qt, pyqtSignal, pyqtSlot)
+from PyQt6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QLabel, QPushButton, QTextEdit, QFileDialog, QWidget, QLineEdit, QMessageBox)
+from PyQt6.QtGui import (QDragEnterEvent, QDropEvent,QIcon)
+from PyQt6.QtCore import (Qt, pyqtSignal, pyqtSlot)
+
+basedir = os.path.dirname(__file__)
+
+try:
+    from ctypes import windll  # Windows.
+    myappid = 'thalexfok.keyvaulttool'
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+except ImportError:
+    pass
 
 class KeyVaultUploader(QMainWindow):
     login_status_signal = pyqtSignal(str)
@@ -27,8 +37,8 @@ class KeyVaultUploader(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Key Vault Uploader")
-        self.setGeometry(100, 100, 800, 600)
+        self.setWindowTitle("Azure Key Vault Secrets Tool")
+        self.setGeometry(100, 100, 1080, 720)
 
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
@@ -100,7 +110,8 @@ class KeyVaultUploader(QMainWindow):
 
     def check_login_status(self):
         self.subscriptions_signal.emit("Not logged in")
-        result = os.system("az account show --output json > az_account.json")
+        result = subprocess.run("az account show --output json > az_account.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        result = result.returncode
         if result == 0:
             with open("az_account.json") as f:
                 account_info = json.load(f)
@@ -112,7 +123,8 @@ class KeyVaultUploader(QMainWindow):
             self.login_status_signal.emit("Not logged in")
 
     def login_to_azure(self):
-        result = os.system("az login --output json > az_login.json")
+        result = subprocess.run("az login --output json > az_login.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        result = result.returncode
         if result == 0:
             with open("az_login.json") as f:
                 login_info = json.load(f)
@@ -125,7 +137,8 @@ class KeyVaultUploader(QMainWindow):
 
     def get_subscriptions(self):
         self.subscriptions_signal.emit("Fetching Subscriptions...")
-        result = os.system("az account list --output json > az_subscriptions.json")
+        result = subprocess.run("az account list --output json > az_subscriptions.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        result = result.returncode
         if result == 0:
             with open("az_subscriptions.json") as f:
                 subscriptions_info = json.load(f)
@@ -144,8 +157,8 @@ class KeyVaultUploader(QMainWindow):
 
     def get_key_vaults(self, subscription_id):
         self.subscriptions_signal.emit("Fetching Key Vaults...")
-        os.system(f"az account set --subscription {subscription_id}")
-        os.system("az keyvault list --output json > az_keyvaults.json")
+        subprocess.run(f"az account set --subscription {subscription_id}", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run("az keyvault list --output json > az_keyvaults.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
         with open("az_keyvaults.json") as f:
             key_vaults_info = json.load(f)
             key_vaults = [kv["name"] for kv in key_vaults_info]
@@ -199,6 +212,9 @@ class KeyVaultUploader(QMainWindow):
         else:
             event.ignore()
     
+    def dragLeaveEvent(self, event):
+        self.setStyleSheet("")
+
     def dropEvent(self, event: QDropEvent):
         self.setStyleSheet("")
         for url in event.mimeData().urls():
@@ -343,6 +359,7 @@ class KeyVaultUploader(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon(os.path.join(basedir, 'icon.ico')))
     uploader = KeyVaultUploader()
     uploader.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

@@ -27,17 +27,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pyinstaller
-        pip install -r requirements.txt
+        pip install poetry
+        poetry install --with build
 
     - name: Build with PyInstaller
       run: |
-        pyinstaller --onefile Azure_kv_tool.py -n "Azure Keyvault Tool"
+        poetry run pyinstaller Azure_kv_tool.spec
 
     - name: Archive build
       run: |
         mkdir release
-        mv "dist/Azure Keyvault Tool.exe" release/
+        mv "dist/Azure_Keyvault_Tool.exe" "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.exe"
       shell: bash
 
     - name: Upload to release
@@ -57,6 +57,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: "release/Azure Keyvault Tool.exe"
+        asset_path: "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.exe"
         asset_name: "Azure Keyvault Tool.exe"
         asset_content_type: application/octet-stream
