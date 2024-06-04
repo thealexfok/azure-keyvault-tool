@@ -170,9 +170,7 @@ class KeyVaultUploader(QMainWindow):
         threading.Thread(target=self.check_login_status).start()
 
     def open_file_dialog(self):
-        options = QFileDialog.Options()
-        options |= QFileDialog.ReadOnly
-        file_name, _ = QFileDialog.getOpenFileName(self, "Open .env file", "", "All Files (*);;Text Files (*.txt);;Env Files (*.env)", options=options)
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open .env file", ".env", "Env Files (*.env.*);;Text Files (*.txt)")
         if file_name:
             self.load_env_file(file_name)
     
@@ -188,8 +186,13 @@ class KeyVaultUploader(QMainWindow):
 
     def dropEvent(self, event: QDropEvent):
         self.setStyleSheet("")
-        for url in event.mimeData().urls():
-            file_name = url.toLocalFile()
+        if event.mimeData().urls() != []:
+            for url in event.mimeData().urls():
+                file_name = url.toLocalFile()
+                self.load_env_file(file_name)
+                self.env_file_path = file_name
+        else:
+            file_name = event.mimeData().text()
             self.load_env_file(file_name)
             self.env_file_path = file_name
     
@@ -271,10 +274,9 @@ class KeyVaultUploader(QMainWindow):
             QMessageBox.warning(self, "Input Error", "Please enter the Key Vault name.")
             return
         
+        
         default_yaml_path = os.path.join(os.path.dirname(self.env_file_path), "env.yml")
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save YAML File", default_yaml_path, "YAML Files (*.yml);;All Files (*)", options=options)
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save YAML File", default_yaml_path, "YAML Files (*.yml);;All Files (*)")
         
         if not file_name:
             return
