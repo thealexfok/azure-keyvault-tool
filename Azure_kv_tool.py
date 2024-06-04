@@ -37,67 +37,7 @@ class KeyVaultUploader(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Azure Key Vault Secrets Tool")
-        self.setGeometry(100, 100, 1080, 720)
-
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-
-        self.layout = QVBoxLayout(self.central_widget)
-
-        self.login_status = QLabel("Checking login status...", self)
-        self.login_status.setStyleSheet("color: blue;")
-        self.layout.addWidget(self.login_status)
-
-        self.login_button = QPushButton("Login to Azure CLI", self)
-        self.login_button.clicked.connect(self.login_to_azure)
-        self.layout.addWidget(self.login_button)
-
-        self.subscriptions_label = QLabel("Your Subscriptions and Key Vaults:", self)
-        self.layout.addWidget(self.subscriptions_label)
-
-        self.subscriptions_list = QTextEdit(self)
-        self.subscriptions_list.setReadOnly(True)
-        self.layout.addWidget(self.subscriptions_list)
-
-        self.key_vault_label = QLabel("Enter Key Vault Name:", self)
-        self.layout.addWidget(self.key_vault_label)
-
-        self.key_vault_input = QLineEdit(self)
-        self.layout.addWidget(self.key_vault_input)
-
-        self.setAcceptDrops(True)
-        self.drag_button = QPushButton("Drag and drop .env file here or click here to upload", self)
-        self.drag_button.setAcceptDrops(True)
-        self.drag_button.clicked.connect(self.open_file_dialog)
-        self.layout.addWidget(self.drag_button)
-
-        self.env_preview_label = QLabel("Environment Variables Preview:", self)
-        self.layout.addWidget(self.env_preview_label)
-
-        self.env_preview = QTextEdit(self)
-        self.env_preview.setReadOnly(True)
-        self.layout.addWidget(self.env_preview)
-
-        self.run_button = QPushButton("Run", self)
-        self.run_button.clicked.connect(self.set_variables)
-        self.layout.addWidget(self.run_button)
-
-        self.clear_button = QPushButton("Clear", self)
-        self.clear_button.clicked.connect(self.clear_preview)
-        self.layout.addWidget(self.clear_button)
-
-        self.save_button = QPushButton("Save YAML", self)
-        self.save_button.clicked.connect(self.save_yaml)
-        self.layout.addWidget(self.save_button)
-
-        self.env_vars = {}
-
-        self.login_status_signal.connect(self.update_login_status)
-        self.subscriptions_signal.connect(self.update_subscriptions)
-
-        # Check login status on startup in a separate thread
-        threading.Thread(target=self.check_login_status).start()
+        self.initUI()
 
     @pyqtSlot(str)
     def update_login_status(self, status):
@@ -166,37 +106,68 @@ class KeyVaultUploader(QMainWindow):
         return key_vaults
 
     def initUI(self):
-        self.setWindowTitle('Azure Key Vault Secrets Upload Tool')
-        self.setGeometry(100, 100, 600, 400)
+        self.setWindowTitle("Azure Key Vault Secrets Tool")
+        self.setGeometry(100, 100, 1080, 720)
 
-        layout = QVBoxLayout()
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
 
-        self.key_vault_name_input = QLineEdit(self)
-        self.key_vault_name_input.setPlaceholderText('Enter Key Vault Name')
-        layout.addWidget(self.key_vault_name_input)
+        self.layout = QVBoxLayout(self.central_widget)
 
-        self.upload_button = QPushButton('Select a .env File', self)
-        self.upload_button.clicked.connect(self.open_file_dialog)
-        layout.addWidget(self.upload_button)
+        self.login_status = QLabel("Checking login status...", self)
+        self.login_status.setStyleSheet("color: blue;")
+        self.layout.addWidget(self.login_status)
 
-        self.clear_button = QPushButton('Clear environment file', self)
-        self.clear_button.clicked.connect(self.clear_env_file)
-        layout.addWidget(self.clear_button)
+        self.login_button = QPushButton("Login to Azure CLI", self)
+        self.login_button.clicked.connect(self.login_to_azure)
+        self.layout.addWidget(self.login_button)
 
-        self.preview_label = QLabel('Environment Variables Preview:')
-        layout.addWidget(self.preview_label)
+        self.subscriptions_label = QLabel("Your Subscriptions and Key Vaults:", self)
+        self.layout.addWidget(self.subscriptions_label)
+
+        self.subscriptions_list = QTextEdit(self)
+        self.subscriptions_list.setReadOnly(True)
+        self.layout.addWidget(self.subscriptions_list)
+
+        self.key_vault_label = QLabel("Enter Key Vault Name:", self)
+        self.layout.addWidget(self.key_vault_label)
+
+        self.key_vault_input = QLineEdit(self)
+        self.layout.addWidget(self.key_vault_input)
+
+        self.setAcceptDrops(True)
+        self.drag_button = QPushButton("Drag and drop .env file here or click here to upload", self)
+        self.drag_button.setAcceptDrops(True)
+        self.drag_button.clicked.connect(self.open_file_dialog)
+        self.layout.addWidget(self.drag_button)
+
+        self.env_preview_label = QLabel("Environment Variables Preview:", self)
+        self.layout.addWidget(self.env_preview_label)
 
         self.env_preview = QTextEdit(self)
         self.env_preview.setReadOnly(True)
-        layout.addWidget(self.env_preview)
+        self.layout.addWidget(self.env_preview)
 
-        self.run_button = QPushButton('Run', self)
+        self.clear_button = QPushButton("Clear variables", self)
+        self.clear_button.clicked.connect(self.clear_preview)
+        self.layout.addWidget(self.clear_button)
+
+        self.run_button = QPushButton("Run", self)
         self.run_button.clicked.connect(self.set_variables)
-        layout.addWidget(self.run_button)
+        self.layout.addWidget(self.run_button)
 
-        self.setLayout(layout)
+        
+        self.save_button = QPushButton("Save YAML", self)
+        self.save_button.clicked.connect(self.save_yaml)
+        self.layout.addWidget(self.save_button)
 
-        self.setAcceptDrops(True)
+        self.env_vars = {}
+
+        self.login_status_signal.connect(self.update_login_status)
+        self.subscriptions_signal.connect(self.update_subscriptions)
+
+        # Check login status on startup in a separate thread
+        threading.Thread(target=self.check_login_status).start()
 
     def open_file_dialog(self):
         options = QFileDialog.Options()
@@ -220,6 +191,7 @@ class KeyVaultUploader(QMainWindow):
         for url in event.mimeData().urls():
             file_name = url.toLocalFile()
             self.load_env_file(file_name)
+            self.env_file_path = file_name
     
     def preview_env_vars(self):
         preview_text = "\n".join([f"{key}: {value}" for key, value in self.env_vars.items()])
@@ -265,7 +237,7 @@ class KeyVaultUploader(QMainWindow):
         self.env_preview.clear()
 
     def set_variables(self):
-        self.key_vault_name = self.key_vault_name_input.text().strip()
+        self.key_vault_name = self.key_vault_input.text().strip()
         if not self.key_vault_name:
             QMessageBox.warning(self, "Input Error", "Please enter the Key Vault name.")
             return
@@ -282,15 +254,13 @@ class KeyVaultUploader(QMainWindow):
             print(f"Connected to Key Vault {self.key_vault_name}")
 
             for key, value in self.env_vars.items():
-                print(f"Setting secret '{key}' in Key Vault {self.key_vault_name}...")
-                client.set_secret(key, value)
-                print(f"Success: Set secret '{key}' in Key Vault {self.key_vault_name}")
+                key_vault_key = key.replace("_", "-")
+                print(f"Setting secret '{key_vault_key}' in Key Vault {self.key_vault_name}...")
+                client.set_secret(key_vault_key, value)
+                print(f"Success: Set secret '{key_vault_key}' in Key Vault {self.key_vault_name}")
             
-            default_yaml_path = os.path.join(os.path.dirname(self.env_file_path), "env.yml")
-            yaml_file_path, _ = QFileDialog.getSaveFileName(self, "Save YAML file", default_yaml_path, "YAML Files (*.yml)")
-            if yaml_file_path:
-                save_to_yaml(self.key_vault_name, self.env_vars, yaml_file_path)
-                QMessageBox.information(self, "Success", f"Environment variables have been set in Key Vault and {yaml_file_path} has been generated.")
+            
+            QMessageBox.information(self, "Success", f"Environment variables have been set in Key Vault and {yaml_file_path} has been generated.")
         
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to set secrets in Key Vault: {str(e)}")
@@ -301,9 +271,10 @@ class KeyVaultUploader(QMainWindow):
             QMessageBox.warning(self, "Input Error", "Please enter the Key Vault name.")
             return
         
+        default_yaml_path = os.path.join(os.path.dirname(self.env_file_path), "env.yml")
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save YAML File", "env.yml", "YAML Files (*.yml);;All Files (*)", options=options)
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save YAML File", default_yaml_path, "YAML Files (*.yml);;All Files (*)", options=options)
         
         if not file_name:
             return
@@ -311,7 +282,7 @@ class KeyVaultUploader(QMainWindow):
         if not file_name.endswith('.yml'):
             file_name += '.yml'
         
-        self.save_to_yaml(key_vault_name, self.env_vars, file_name)
+        self.save_to_yaml(self.key_vault_name, self.env_vars, file_name)
         QMessageBox.information(self, "Success", "YAML file saved successfully.")
 
     # Function to save environment variables to a YAML file
