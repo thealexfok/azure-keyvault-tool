@@ -238,15 +238,16 @@ class KeyVaultUploader(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to connect to Key Vault: {e}")
             return
-
+        self.status_signal.emit("="*100)
         self.status_signal.emit(f"Uploading environment variables to {key_vault_name}...")
         for key, value in self.env_vars.items():
             try:
                 key_vault_key = key.replace("_", "-")
                 client.set_secret(key_vault_key, value)
-                self.status_signal.emit(f"Successfully set {key}")
+                self.status_signal.emit(f"Successfully set {key} in {key_vault_name}.")
             except Exception as e:
-                self.status_signal.emit(f"Failed to set {key}: {e}")
+                self.status_signal.emit(f"Failed to set {key}: {e} in {key_vault_name}.")
+        self.status_signal.emit("\n"+"="*100)
 
     def save_yaml(self):
         key_vault_name = self.key_vault_input.text()
@@ -300,12 +301,12 @@ class KeyVaultUploader(QMainWindow):
         for key, value in env_vars.items():
             formatted_key = key.replace('-', '_')
             yaml_content += (
-                f"          {formatted_key}=\"@Microsoft.KeyVault(SecretUri=https://{key_vault_name}${{{{ parameters.environment }}}}.vault.azure.net/secrets/{key}/)\"\n"
+                f"          {formatted_key}=\"@Microsoft.KeyVault(SecretUri=https://{key_vault_name}${{{{ parameters.environment }}}}.vault.azure.net/secrets/{key}/)\" \\\n"
             )
 
         # Add the closing YAML content
         yaml_content += (
-            "\\\n"
+            "\n"
         )
 
         # Write the YAML content to the file
