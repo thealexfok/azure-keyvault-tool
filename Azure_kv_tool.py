@@ -301,7 +301,7 @@ class KeyVaultUploader(QMainWindow):
         for key, value in env_vars.items():
             formatted_key = key.replace('_', '-')
             yaml_content += (
-                f"          {key}=\"@Microsoft.KeyVault(SecretUri=https://{key_vault_name}${{{{ parameters.environment }}}}.vault.azure.net/secrets/{formatted_key}/)\" \\\n"
+                f"          {key}=\"@Microsoft.KeyVault(SecretUri=https://{key_vault_name[:-3]}${{{{ parameters.environment }}}}.vault.azure.net/secrets/{formatted_key}/)\" \\\n"
             )
 
         # Add the closing YAML content
