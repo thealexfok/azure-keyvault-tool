@@ -86,7 +86,7 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
-        poetry run pyinstaller Azure_kv_tool.spec --onefile
+        poetry run pyinstaller Azure_kv_tool.spec
 
     - name: Archive build
       run: |
