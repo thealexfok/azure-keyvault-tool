@@ -66,47 +66,52 @@ jobs:
         asset_name: "Azure Keyvault Tool Windows.exe"
         asset_content_type: application/octet-stream
 
-  # build-macos:
-  #   runs-on: macos-latest
-  #   needs: build-windows
+  build-macos:
+    runs-on: macos-latest
+    needs: build-windows
 
-  #   steps:
-  #   - name: Checkout code
-  #     uses: actions/checkout@v4
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-  #   - name: Set up Python
-  #     uses: actions/setup-python@v5
-  #     with:
-  #       python-version: '3.12'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-  #   - name: Install dependencies
-  #     run: |
-  #       python -m pip install --upgrade pip
-  #       pip install poetry
-  #       poetry install --with build
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install poetry
+        poetry install --with build
 
-  #   - name: Update version
-  #     run: sed -i '' "s/__version__ = .*/__version__ = 'v0.0.${{ github.run_number }}'/" Azure_kv_tool.py
+    - name: Update version
+      run: sed -i '' "s/__version__ = .*/__version__ = 'v0.0.${{ github.run_number }}'/" Azure_kv_tool.py
 
-  #   - name: Build with PyInstaller
-  #     run: |
-  #       poetry run pyinstaller Azure_kv_tool.spec
+    - name: Build with PyInstaller
+      run: |
+        poetry run pyinstaller Azure_kv_tool.spec
 
-  #   - name: Archive build
-  #     run: |
-  #       mkdir -p release
-  #       mv "dist/Azure_kv_tool" "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.app"
-  #     shell: bash
+    - name: Archive build
+      run: |
+        mkdir -p release
+        mv "dist/Azure_kv_tool" "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.app"
+      shell: bash
 
-  #   # - name: List release directory
-  #   #   run: ls -l release
+    - name: Zip .app file
+      run: |
+        cd release
+        zip -r "Azure Keyvault Tool v0.0.${{ github.run_number }}.zip" "Azure Keyvault Tool v0.0.${{ github.run_number }}.app"
 
-  #   - name: Upload release asset
-  #     uses: actions/upload-release-asset@v1
-  #     env:
-  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     with:
-  #       upload_url: ${{ needs.build-windows.outputs.upload_url }}
-  #       asset_path: "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.app"
-  #       asset_name: "Azure Keyvault Tool macOS.app"
-  #       asset_content_type: application/octet-stream
+    # - name: List release directory
+    #   run: ls -l release
+
+    - name: Upload release asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.build-windows.outputs.upload_url }}
+        asset_path: "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.zip"
+        asset_name: "Azure Keyvault Tool macOS.zip"
+        asset_content_type: application/zip
