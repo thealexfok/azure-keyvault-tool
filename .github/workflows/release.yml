@@ -53,7 +53,7 @@ jobs:
       with:
         tag_name: 'v0.0.${{ github.run_number }}'
         release_name: 'Release v0.0.${{ github.run_number }}'
-        draft: true
+        draft: false
         prerelease: false
 
     - name: Upload release asset
@@ -100,13 +100,24 @@ jobs:
 
     # - name: List release directory
     #   run: ls -l release
+    
+    - name: Upload to release
+      id: create_release_macos
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: 'v0.0.${{ github.run_number }}-macos'
+        release_name: 'Release v0.0.${{ github.run_number }}-macos'
+        draft: false
+        prerelease: false
 
     - name: Upload release asset
       uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        upload_url: ${{ needs.build-windows.outputs.upload_url }}
+        upload_url: ${{ steps.create_release_macos.outputs.upload_url }}
         asset_path: "release/Azure Keyvault Tool v0.0.${{ github.run_number }}.app"
         asset_name: "Azure Keyvault Tool macOS.app"
         asset_content_type: application/octet-stream
