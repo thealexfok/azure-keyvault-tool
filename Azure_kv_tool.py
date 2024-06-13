@@ -53,7 +53,8 @@ class KeyVaultUploader(QMainWindow):
 
     def check_login_status(self):
         self.subscriptions_signal.emit("Not logged in")
-        result = subprocess.run("az account show --output json > az_account.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        # result = subprocess.run("az account show --output json > az_account.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        result = subprocess.run("az account show --output json > az_account.json", shell=True)
         if result.returncode == 0:
             with open("az_account.json") as f:
                 account_info = json.load(f)
@@ -78,7 +79,8 @@ class KeyVaultUploader(QMainWindow):
 
     def get_subscriptions(self):
         self.subscriptions_signal.emit("Fetching Subscriptions...")
-        result = subprocess.run("az account list --output json > az_subscriptions.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        # result = subprocess.run("az account list --output json > az_subscriptions.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        result = subprocess.run("az account list --output json > az_subscriptions.json", shell=True)
         if result.returncode == 0:
             with open("az_subscriptions.json") as f:
                 subscriptions_info = json.load(f)
@@ -97,8 +99,10 @@ class KeyVaultUploader(QMainWindow):
 
     def get_key_vaults(self, subscription_id):
         self.subscriptions_signal.emit("Fetching Key Vaults...")
-        subprocess.run(f"az account set --subscription {subscription_id}", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
-        subprocess.run("az keyvault list --output json > az_keyvaults.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        # subprocess.run(f"az account set --subscription {subscription_id}", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        # subprocess.run("az keyvault list --output json > az_keyvaults.json", shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.run(f"az account set --subscription {subscription_id}", shell=True)
+        subprocess.run("az keyvault list --output json > az_keyvaults.json", shell=True)
         with open("az_keyvaults.json") as f:
             key_vaults_info = json.load(f)
             key_vaults = [kv["name"] for kv in key_vaults_info]
