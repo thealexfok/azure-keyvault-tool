@@ -64,6 +64,7 @@ jobs:
 
   build-macos:
     runs-on: macos-latest
+    need: build-windows
 
     steps:
     - name: Checkout code
