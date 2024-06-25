@@ -130,11 +130,16 @@ class KeyVaultUploader(QMainWindow):
         self.check_updates_button.clicked.connect(self.check_for_updates)
         login_update_layout.addWidget(self.check_updates_button)
         self.layout.addLayout(login_update_layout)
-
+    
         self.subscriptions_label = QLabel("Your Subscriptions and Key Vaults:", self)
         self.layout.addWidget(self.subscriptions_label)
 
         self.subscriptions_list = QTextEdit(self)
+
+        self.fetch_button = QPushButton("Fetch subscriptions and key vaults", self)
+        self.fetch_button.clicked.connect(self.get_subscriptions)
+
+        self.layout.addWidget(self.fetch_button)
         self.subscriptions_list.setReadOnly(True)
         self.layout.addWidget(self.subscriptions_list)
 
@@ -219,6 +224,17 @@ class KeyVaultUploader(QMainWindow):
     def load_env_file(self, file_name):
         with open(file_name, 'r') as file:
             for line in file:
+                # Strip leading and trailing whitespace
+                line = line.strip()
+                
+                # Ignore empty lines and comments
+                if not line or line.startswith(('#','//')):
+                    continue
+                
+                # Remove inline comments
+                if '#' in line:
+                    line = line.split('#', 1)[0].strip()
+
                 if '=' in line:
                     key, value = line.strip().split('=', 1)
                     self.env_vars[key.strip()] = value.strip().replace(" ", "")
